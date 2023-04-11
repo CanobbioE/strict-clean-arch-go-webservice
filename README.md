@@ -11,3 +11,10 @@ The folder structure matches the rings in the above diagram. Starting from the i
 - The `usecase` folder contains the Application Business Rules - i.e. data manipulation
 - The `interface` folder contains the Interface Adapters - i.e. input/output transformation
 - The `infrastructure` folder contains the Frameworks and Drivers - i.e. protocol-specific implementations
+
+# TODO
+
+- Add unit tests
+- Add Docker
+- Add CI/CD
+- Add integration tests
