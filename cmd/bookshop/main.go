@@ -9,12 +9,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/config"
 	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/infrastructure/db"
 	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/infrastructure/webservice"
 	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/interfaces/controller"
 	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/interfaces/presenter"
 	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/usecase/interactor"
-	"github.com/CanobbioE/strict-clean-arch-go-webservice/pkg/config"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 		panic("CONFIG_PATH environment variable not set")
 	}
 
-	cfg, err := config.LoadConfig(configFile)
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		panic("failed to load config: " + err.Error())
 	}
@@ -39,7 +39,7 @@ func main() {
 	errPresenter := presenter.NewErrorPresenter(logger)
 	ctl := controller.NewBookController(logger, interact, bookPresenter, errPresenter)
 
-	router := webservice.NewRouter(ctl)
+	router := webservice.NewHandler(ctl)
 
 	s := &http.Server{
 		Addr:              cfg.ServerAddress,
