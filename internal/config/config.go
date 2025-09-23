@@ -7,18 +7,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config represents the service configuration.
-type Config struct {
+// ServiceCfg represents the service configuration.
+type ServiceCfg struct {
 	ServerAddress string `yaml:"server_address"`
 }
 
-// LoadConfig reads a YAML file and returns a Config object.
-func LoadConfig(path string) (*Config, error) {
+// Load reads a YAML file and returns a ServiceCfg object.
+func Load(path string) (*ServiceCfg, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // potential file inclusion
 	if err != nil {
 		return nil, err
 	}
-	var cfg Config
+	var cfg ServiceCfg
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
