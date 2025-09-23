@@ -26,7 +26,6 @@ func NewErrorPresenter(logger *slog.Logger) *ErrorPresenter {
 // Internal errors are caught and replaced with a default message.
 // If the error is one of the known types, the code is overwritten with the correct one.
 func (p *ErrorPresenter) Present(w http.ResponseWriter, err error, code int) {
-	var c int
 	switch {
 	case err == nil:
 		return
@@ -42,17 +41,18 @@ func (p *ErrorPresenter) Present(w http.ResponseWriter, err error, code int) {
 		p.handleInternalError(w, err)
 		return
 	}
+	w.WriteHeader(code)
 	err = json.NewEncoder(w).Encode(map[string]any{
-		"status":  http.StatusText(c),
+		"status":  http.StatusText(code),
 		"message": err.Error(),
 	})
 	if err != nil {
 		p.logger.With("error", err).Error("failed to write error response")
 	}
-	w.WriteHeader(c)
 }
 
 func (p *ErrorPresenter) handleInternalError(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusInternalServerError)
 	err = json.NewEncoder(w).Encode(map[string]any{
 		"status":  http.StatusText(http.StatusInternalServerError),
 		"message": "internal server error",
@@ -60,5 +60,4 @@ func (p *ErrorPresenter) handleInternalError(w http.ResponseWriter, err error) {
 	if err != nil {
 		p.logger.With("error", err).Error("failed to write error response")
 	}
-	w.WriteHeader(http.StatusInternalServerError)
 }

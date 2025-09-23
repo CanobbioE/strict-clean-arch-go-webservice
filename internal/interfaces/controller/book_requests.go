@@ -13,7 +13,8 @@ type CreateBookRequest struct {
 	Price  int    `json:"price"`
 }
 
-func (r *CreateBookRequest) validate() error {
+// Validate a CreateBookRequest.
+func (r *CreateBookRequest) Validate() error {
 	switch {
 	case r.Title == "":
 		return errors.New("title is required")
@@ -31,7 +32,8 @@ type UpdateBookRequest struct {
 	Price int    `json:"price"`
 }
 
-func (r *UpdateBookRequest) validate() error {
+// Validate an UpdateBookRequest.
+func (r *UpdateBookRequest) Validate() error {
 	switch {
 	case r.ID == "":
 		return errors.New("id is required")

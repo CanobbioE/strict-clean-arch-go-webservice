@@ -5,13 +5,12 @@ package db
 import (
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/CanobbioE/strict-clean-arch-go-webservice/internal/domain"
 )
-
-var errNotFound = errors.New("book not found")
 
 // InMemoryBookRepo implements domain.BookRepository as an in-memory database.
 // The repository is wiped with each restart.
@@ -37,7 +36,8 @@ func (r *InMemoryBookRepo) ReadByID(id uuid.UUID) (*domain.Book, error) {
 	if b, ok := r.books[id]; ok {
 		return b, nil
 	}
-	return nil, errNotFound
+	return nil, errors.New("book not found")
+
 }
 
 // ReadAll return a list of books.
@@ -52,7 +52,7 @@ func (r *InMemoryBookRepo) ReadAll() ([]*domain.Book, error) {
 // Update the price of a book.
 func (r *InMemoryBookRepo) Update(book *domain.Book) error {
 	if _, ok := r.books[book.ID]; !ok {
-		return errNotFound
+		return errors.New("book not found")
 	}
 	r.books[book.ID].Price = book.Price
 	return nil
@@ -61,13 +61,15 @@ func (r *InMemoryBookRepo) Update(book *domain.Book) error {
 // Delete a single book, matched by ID.
 func (r *InMemoryBookRepo) Delete(id uuid.UUID) error {
 	if _, ok := r.books[id]; !ok {
-		return errNotFound
+		return errors.New("book not found")
 	}
 	delete(r.books, id)
 	return nil
 }
 
-// IsNotFoundError return true if the error is not nil and matches the internal errNotFound.
+// IsNotFoundError return true if the error is not nil and is a not found error.
+// This is more useful with real DBs, where errors are a bit more cryptic
+// (e.g. [-106] Row to DELETE not found).
 func IsNotFoundError(err error) bool {
-	return errors.Is(err, errNotFound)
+	return err != nil && strings.Contains(err.Error(), "book not found")
 }

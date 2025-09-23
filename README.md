@@ -13,8 +13,8 @@ The folder structure matches the rings in the above diagram. Starting from the i
 - The `infrastructure` folder contains the Frameworks and Drivers - i.e. protocol-specific implementations
 
 # TODO
-
-- Add unit tests
+- Propagate context
+- Add list filters
 - Add Docker
 - Add CI/CD
 - Add integration tests

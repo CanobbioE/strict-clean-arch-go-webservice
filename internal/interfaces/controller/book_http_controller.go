@@ -72,7 +72,7 @@ func (bc *BookController) CreateBook(w http.ResponseWriter, r *http.Request) {
 	var b CreateBookRequest
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		bc.logger.With("error", err).Error("unable to decode request body")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		bc.errPresenter.Present(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -145,11 +145,11 @@ func (bc *BookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	var b UpdateBookRequest
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		bc.logger.With("error", err).Error("unable to decode request body")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		bc.errPresenter.Present(w, err, http.StatusBadRequest)
 		return
 	}
 
-	if err := b.validate(); err != nil {
+	if err := b.Validate(); err != nil {
 		bc.logger.With("error", err).Error("invalid request body")
 		bc.errPresenter.Present(w, err, http.StatusBadRequest)
 		return
