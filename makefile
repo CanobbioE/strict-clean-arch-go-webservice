@@ -19,8 +19,7 @@ lint:
 	@golangci-lint run --new-from-rev=$$(git merge-base HEAD main) --timeout 2m0s ./...
 
 test:
-	go test $(shell go list ./... | grep -vE 'test|vendor') -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
+	go test -race -coverprofile=coverage.txt -covermode=atomic $(shell go list ./... | grep -vE 'test|vendor')
 
 generate-mocks: _generate-mocks fmt gci
 

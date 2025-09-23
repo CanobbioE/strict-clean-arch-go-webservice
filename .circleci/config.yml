@@ -1,0 +1,91 @@
+version: 2.1
+
+orbs:
+  go: circleci/go@3.0.2
+  codecov: codecov/codecov@5
+
+commands:
+  setup_environment:
+    description: "Setup the environment for testing and building"
+    steps:
+      - checkout
+      - go/install:
+          version: '1.23.6'
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+            - go-mod-v1-
+      - run:
+          name: Install Dependencies
+          command: |
+            go mod download
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg/mod
+
+executors:
+  go-executor:
+    docker:
+      - image: cimg/go:1.23.6
+    environment:
+      CGO_ENABLED: 1
+      GOOS: linux
+      GOARCH: amd64
+
+jobs:
+  test:
+    executor: go-executor
+    steps:
+      - setup_environment
+      - run:
+          name: Run Tests with Coverage
+          command: |
+            mkdir -p /tmp/test-results
+            make test
+      - store_test_results:
+          path: /tmp/test-results
+      - codecov/upload
+
+  lint:
+    executor: go-executor
+    steps:
+      - setup_environment
+      - run:
+          name: Install Linters
+          command: make install-tools
+      - run:
+          name: Run Linters
+          command: make lint
+
+  build:
+    executor: go-executor
+    steps:
+      - setup_environment
+      - run:
+          name: Build Binary
+          command: |
+            go build -o bin/psst ./main.go
+      - store_artifacts:
+          path: bin/psst
+          destination: psst
+
+workflows:
+  version: 2
+  build-test:
+    jobs:
+      - lint:
+          filters:
+            tags:
+              only: /.*/
+      - test:
+          filters:
+            tags:
+              only: /.*/
+      - build:
+          requires:
+            - lint
+            - test
+          filters:
+            tags:
+              only: /.*/
