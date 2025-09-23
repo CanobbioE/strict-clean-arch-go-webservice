@@ -5,6 +5,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -39,7 +40,7 @@ type BookPresenter interface {
 // to be used by the BookController to return error responses.
 type ErrorPresenter interface {
 	// Present prepares the error message to be returned through w.
-	Present(w http.ResponseWriter, err error)
+	Present(w http.ResponseWriter, err error, code int)
 }
 
 // BookController handles http requests, validates them and transform them into domain objects.
@@ -71,13 +72,13 @@ func (bc *BookController) CreateBook(w http.ResponseWriter, r *http.Request) {
 	var b CreateBookRequest
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		bc.logger.With("error", err).Error("unable to decode request body")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := b.validate(); err != nil {
+	if err := b.Validate(); err != nil {
 		bc.logger.With("error", err).Error("invalid request body")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		bc.errPresenter.Present(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -87,7 +88,7 @@ func (bc *BookController) CreateBook(w http.ResponseWriter, r *http.Request) {
 		Price:  b.Price,
 	}); err != nil {
 		bc.logger.With("error", err).Error("unable to create book")
-		bc.errPresenter.Present(w, err)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -99,20 +100,20 @@ func (bc *BookController) GetBook(w http.ResponseWriter, r *http.Request) {
 	l := bc.logger.With("book_id", id)
 
 	if id == "" {
-		http.Error(w, "book id required", http.StatusBadRequest)
+		bc.errPresenter.Present(w, errors.New("book id is required"), http.StatusBadRequest)
 		return
 	}
 
 	book, err := bc.interactor.GetBook(id)
 	if err != nil {
 		l.With("error", err).Error("error getting book")
-		bc.errPresenter.Present(w, err)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 	err = json.NewEncoder(w).Encode(bc.bookPresenter.Present(book))
 	if err != nil {
 		l.With("error", err).Error("error presenting book")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -122,7 +123,7 @@ func (bc *BookController) ListBooks(w http.ResponseWriter, _ *http.Request) {
 	books, err := bc.interactor.ListBooks()
 	if err != nil {
 		bc.logger.With("error", err).Error("error listing books")
-		bc.errPresenter.Present(w, err)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -134,7 +135,7 @@ func (bc *BookController) ListBooks(w http.ResponseWriter, _ *http.Request) {
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		bc.logger.With("error", err).Error("error presenting books")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -150,7 +151,7 @@ func (bc *BookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
 
 	if err := b.validate(); err != nil {
 		bc.logger.With("error", err).Error("invalid request body")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		bc.errPresenter.Present(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -160,7 +161,7 @@ func (bc *BookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		bc.logger.With("book_id", b.ID).With("error", err).Error("error updating book")
-		bc.errPresenter.Present(w, err)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -173,14 +174,14 @@ func (bc *BookController) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	l := bc.logger.With("book_id", id)
 
 	if id == "" {
-		http.Error(w, "book id required", http.StatusBadRequest)
+		bc.errPresenter.Present(w, errors.New("book id is required"), http.StatusBadRequest)
 		return
 	}
 
 	err := bc.interactor.DeleteBook(id)
 	if err != nil {
 		l.With("error", err).Error("error deleting book")
-		bc.errPresenter.Present(w, err)
+		bc.errPresenter.Present(w, err, http.StatusInternalServerError)
 		return
 	}
 }

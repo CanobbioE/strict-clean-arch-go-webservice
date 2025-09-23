@@ -24,8 +24,9 @@ func NewErrorPresenter(logger *slog.Logger) *ErrorPresenter {
 // Present writes the JSON representation of the error directly to w.
 // Additionally, it writes the correct error code to w.
 // Internal errors are caught and replaced with a default message.
-func (p *ErrorPresenter) Present(w http.ResponseWriter, err error) {
-	var code int
+// If the error is one of the known types, the code is overwritten with the correct one.
+func (p *ErrorPresenter) Present(w http.ResponseWriter, err error, code int) {
+	var c int
 	switch {
 	case err == nil:
 		return
@@ -33,24 +34,31 @@ func (p *ErrorPresenter) Present(w http.ResponseWriter, err error) {
 		code = http.StatusNotFound
 	case errors.Is(err, domain.ErrInvalidBookID):
 		code = http.StatusBadRequest
+	case code == http.StatusInternalServerError:
+		p.handleInternalError(w, err)
+		return
+	case http.StatusText(code) != "":
 	default:
-		err = json.NewEncoder(w).Encode(map[string]any{
-			"status":  http.StatusText(http.StatusInternalServerError),
-			"message": "internal server error",
-		})
-		if err != nil {
-			p.logger.With("error", err).Error("failed to write error response")
-		}
-		w.WriteHeader(http.StatusInternalServerError)
+		p.handleInternalError(w, err)
 		return
 	}
-
 	err = json.NewEncoder(w).Encode(map[string]any{
-		"status":  http.StatusText(code),
+		"status":  http.StatusText(c),
 		"message": err.Error(),
 	})
 	if err != nil {
 		p.logger.With("error", err).Error("failed to write error response")
 	}
-	w.WriteHeader(code)
+	w.WriteHeader(c)
+}
+
+func (p *ErrorPresenter) handleInternalError(w http.ResponseWriter, err error) {
+	err = json.NewEncoder(w).Encode(map[string]any{
+		"status":  http.StatusText(http.StatusInternalServerError),
+		"message": "internal server error",
+	})
+	if err != nil {
+		p.logger.With("error", err).Error("failed to write error response")
+	}
+	w.WriteHeader(http.StatusInternalServerError)
 }
