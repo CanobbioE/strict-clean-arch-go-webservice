@@ -19,5 +19,4 @@ The folder structure matches the rings in the above diagram. Starting from the i
 # TODO
 - Propagate context
 - Add list filters
-- Add Docker
 - Add integration tests
