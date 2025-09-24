@@ -1,0 +1,3 @@
+ignore:
+  - "cmd/bookshop/main.go"
+  - "internal/test/"
